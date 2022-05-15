@@ -6,7 +6,7 @@ const config: MysqlConnectionOptions = {
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '',
+  password: '1Utawarerumono',
   entities: ['dist/src/**/*.entity{.ts,.js}'],
   migrations: ['dist/src/database/migrations/*.js'],
   cli: { migrationsDir: 'src/database/migrations' },

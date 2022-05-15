@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:lastest
+    environment:
+      - MYSQL_DATABASE: voucher2
+      - MYSQL_ROOT_PASSWORD: 1Utawarerumono
+      - MYSQL_USER: root
+      - MYSQL_PASSWORD: root
+    ports:
+      - 3306
+    volumes:
+      - db-data:/var/lib/mysql
