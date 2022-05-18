@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, getRepository, Repository, UpdateResult } from 'typeorm';
-import { ArticleCreate } from './article.dto';
+import { ArticleCreate, ArticleUpdate } from './article.dto';
 import { Article } from './article.entity';
 
 @Injectable()
@@ -23,19 +23,17 @@ export class ArticleService {
 
   async findArticleVoucher(id: number): Promise<Article> {
     return await getRepository(Article)
-    .createQueryBuilder('article')
-    .leftJoinAndSelect('article.vouchers', 'voucher')
-    .where('article.id = :id', { id: id })
-    .getOne();
+      .createQueryBuilder('article')
+      .leftJoinAndSelect('article.vouchers', 'voucher')
+      .where('article.id = :id', { id: id })
+      .getOne();
   }
 
   async findOne(id: number): Promise<Article> {
     return await this.articleRepo.findOne(id);
   }
 
-  async create(
-    article: ArticleCreate,
-  ): Promise<Article> {
+  async create(article: ArticleCreate): Promise<Article> {
     const newArticle = this.articleRepo.create({ ...article });
     return await this.articleRepo.save(newArticle);
   }
@@ -46,10 +44,11 @@ export class ArticleService {
 
   async updateContent(
     id: number,
-    content: string,
+    update: ArticleUpdate,
   ): Promise<UpdateResult> {
     const article = await this.findOne(id);
-    article.content = content
+    article.content = update.content;
+    article.thumnail = update.thumnail;
     return await this.articleRepo.update(id, article);
   }
 

@@ -3,3 +3,8 @@ export class ArticleCreate {
   content?: string;
   partner: string;
 }
+
+export class ArticleUpdate {
+  content: string;
+  thumnail: string;
+}

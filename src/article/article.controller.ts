@@ -9,7 +9,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ArticleCreate } from './article.dto';
+import { ArticleCreate, ArticleUpdate } from './article.dto';
 import { Article } from './article.entity';
 import { ArticleService } from './article.service';
 
@@ -51,8 +51,8 @@ export class ArticleController {
   }
 
   @Put('content/article?')
-  updateArticle(@Query('id') id: number, @Body() content: string) {
-    return this.articleService.updateContent(id, content);
+  updateArticle(@Query('id') id: number, @Body() update: ArticleUpdate) {
+    return this.articleService.updateContent(id, update);
   }
 
   @Delete('delete/article?')
