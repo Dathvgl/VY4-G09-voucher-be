@@ -40,18 +40,15 @@ export class GiftCardService {
       message: {},
     };
 
-    console.log(Object.keys(errors.message).length);
     const isExist = await this.giftcardRepo.findOne(giftcard.id);
     if (isExist != undefined) {
       errors.message['id'] = 'Mã đã tồn tại';
     }
 
-    console.log(Object.keys(errors.message).length);
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
-    console.log("Success");
     const newGiftCard = this.giftcardRepo.create({ ...giftcard });
     newGiftCard.partner = id;
     return await this.giftcardRepo.save(newGiftCard);
@@ -73,7 +70,7 @@ export class GiftCardService {
       errors.message['status'] = 1;
     }
 
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
@@ -97,7 +94,7 @@ export class GiftCardService {
       errors.message['status'] = 1;
     }
 
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 

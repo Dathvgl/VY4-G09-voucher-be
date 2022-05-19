@@ -146,7 +146,7 @@ export class VoucherService {
       errors.message['date'] = 'Hạn sử dụng không có';
     }
 
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
@@ -174,7 +174,7 @@ export class VoucherService {
       errors.message['status'] = 1;
     }
 
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
@@ -202,7 +202,7 @@ export class VoucherService {
       errors.message['status'] = 1;
     }
 
-    if (Object.keys(errors.message).length == 0) {
+    if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
