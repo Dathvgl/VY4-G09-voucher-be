@@ -16,6 +16,11 @@ import { GiftCardService } from './giftcard.service';
 export class GiftCardController {
   constructor(private readonly giftcardService: GiftCardService) {}
 
+  @Get()
+  findAll(): Promise<GiftCard[]> {
+    return this.giftcardService.findAll();
+  }
+
   @Get('find/?')
   findbyService(
     @Query('service') service: string,

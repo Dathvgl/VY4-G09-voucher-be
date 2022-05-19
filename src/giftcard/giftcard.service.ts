@@ -15,6 +15,10 @@ export class GiftCardService {
     private readonly giftcardRepo: Repository<GiftCard>,
   ) {}
 
+  async findAll(): Promise<GiftCard[]> {
+    return await this.giftcardRepo.find();
+  }
+
   async findbyService(service: string): Promise<GiftCard[]> {
     return await this.giftcardRepo.find({
       where: { service: service },

@@ -33,8 +33,9 @@ export class ArticleService {
     return await this.articleRepo.findOne(id);
   }
 
-  async create(article: ArticleCreate): Promise<Article> {
+  async create(partner: string, article: ArticleCreate): Promise<Article> {
     const newArticle = this.articleRepo.create({ ...article });
+    newArticle.partner = partner;
     return await this.articleRepo.save(newArticle);
   }
 

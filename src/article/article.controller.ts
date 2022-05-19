@@ -32,17 +32,10 @@ export class ArticleController {
     return this.articleService.findArticleVoucher(id);
   }
 
-  @Get(':id')
-  get(@Param() params) {
-    return this.articleService.findOne(params.id);
-  }
-
   @Post('create/partner?')
   @Header('Content-Type', 'application/json')
-  create(
-    @Body() article: ArticleCreate,
-  ) {
-    return this.articleService.create(article);
+  create(@Query('id') partner: string, @Body() article: ArticleCreate) {
+    return this.articleService.create(partner, article);
   }
 
   @Put()
