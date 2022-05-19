@@ -4,12 +4,11 @@ import {
   Delete,
   Get,
   Header,
-  Param,
   Post,
   Put,
   Query,
 } from '@nestjs/common';
-import { findAllId_Dto, GiftCardCreate } from './giftcard.dto';
+import { GiftCardCreate } from './giftcard.dto';
 import { GiftCard } from './giftcard.entity';
 import { GiftCardService } from './giftcard.service';
 
@@ -17,19 +16,16 @@ import { GiftCardService } from './giftcard.service';
 export class GiftCardController {
   constructor(private readonly giftcardService: GiftCardService) {}
 
-  @Get('all-id')
-  findAllId(): Promise<findAllId_Dto[]> {
-    return this.giftcardService.findAllId();
+  @Get('find/?')
+  findbyService(
+    @Query('service') service: string,
+  ): Promise<GiftCard[]> {
+    return this.giftcardService.findbyService(service);
   }
 
-  @Get('activate/giftcard?')
-  findUse(@Query('id') id: string) {
-    return this.giftcardService.findUse(id);
-  }
-
-  @Get(':id')
-  get(@Param() params) {
-    return this.giftcardService.findOne(params.id);
+  @Get('list/user?')
+  findbyUser(@Query('id') user: string) {
+    return this.giftcardService.findbyUser(user);
   }
 
   @Post('create/partner?')
@@ -41,23 +37,18 @@ export class GiftCardController {
     return this.giftcardService.createPartner(id, giftcard);
   }
 
-  @Put()
-  update(@Body() giftcard: GiftCard) {
-    return this.giftcardService.update(giftcard);
-  }
-
-  @Put('activate/voucher?')
+  @Put('activate/giftcard?')
   updateUse(@Query('id') id: string, @Query('user') user: string) {
     return this.giftcardService.updateUse(id, user);
   }
 
-  @Put('owned/voucher?')
+  @Put('owned/giftcard?')
   updateOwned(@Query('id') id: string, @Query('user') user: string) {
     return this.giftcardService.updateOwned(id, user);
   }
 
-  @Delete(':id')
-  deleteUser(@Param() params) {
-    return this.giftcardService.delete(params.id);
+  @Delete('delete/giftcard?')
+  deleteGiftCard(@Query('id') id: string) {
+    return this.giftcardService.delete(id);
   }
 }

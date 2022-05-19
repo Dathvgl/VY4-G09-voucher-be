@@ -9,6 +9,9 @@ export class GiftCard {
   name: string;
 
   @Column()
+  service: string;
+
+  @Column()
   price: number;
 
   @Column()

@@ -1,9 +1,5 @@
 import { Article } from "src/article/article.entity";
 
-export class findAllId_Dto {
-  id: string;
-}
-
 export class createVoucher_Dto {
   id: string;
   name: string;

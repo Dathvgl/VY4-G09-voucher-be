@@ -8,7 +8,6 @@ import {
   Query,
 } from '@nestjs/common';
 import {
-  findAllId_Dto,
   updateArticle_Dto,
   createVoucher_Dto,
 } from './voucher.dto';
@@ -18,11 +17,6 @@ import { VoucherService } from './voucher.service';
 @Controller('vouchers')
 export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
-
-  @Get('all-id')
-  findAllId(): Promise<findAllId_Dto[]> {
-    return this.voucherService.findAllId();
-  }
 
   @Get('find/?')
   findbyService(

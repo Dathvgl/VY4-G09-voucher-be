@@ -1,11 +1,12 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, MoreThan, Repository, UpdateResult } from 'typeorm';
-import {
-  findAllId_Dto,
-  updateArticle_Dto,
-  createVoucher_Dto,
-} from './voucher.dto';
+import { updateArticle_Dto, createVoucher_Dto } from './voucher.dto';
 import { Voucher } from './voucher.entity';
 
 @Injectable()
@@ -14,12 +15,6 @@ export class VoucherService {
     @InjectRepository(Voucher)
     private readonly voucherRepo: Repository<Voucher>,
   ) {}
-
-  async findAllId(): Promise<findAllId_Dto[]> {
-    return await this.voucherRepo.find({
-      select: ['id'],
-    });
-  }
 
   async findbyService(service: string): Promise<Voucher[]> {
     const res = await this.voucherRepo.find({
@@ -56,16 +51,14 @@ export class VoucherService {
     return array;
   }
 
-  async findbyUserUse(userId: string): Promise<Voucher[]> {
-    return await this.voucherRepo.find({
-      where: { userUse: userId },
-    });
+  async findbyUserUse(user: string): Promise<Voucher[]> {
+    const giftcard = await this.voucherRepo.find();
+    return giftcard.filter((item) => item.userUse.includes(user));
   }
 
-  async findbyUserOwned(userId: string): Promise<Voucher[]> {
-    return await this.voucherRepo.find({
-      where: { userOwned: userId },
-    });
+  async findbyUserOwned(user: string): Promise<Voucher[]> {
+    const giftcard = await this.voucherRepo.find();
+    return giftcard.filter((item) => item.userOwned.includes(user));
   }
 
   async findbyFree(service: string): Promise<Voucher[]> {
@@ -114,57 +107,104 @@ export class VoucherService {
     id: string,
     voucher: createVoucher_Dto,
   ): Promise<Voucher> {
+    const errors = {
+      statusCode: HttpStatus.FORBIDDEN,
+      message: {},
+    };
+
     const isExist = await this.voucherRepo.findOne(voucher.id);
-    if (isExist != undefined) throw new ConflictException('Voucher đã có');
-
-    const newVoucher = this.voucherRepo.create({ ...voucher });
-
-    if (newVoucher.dateStart != null && newVoucher.dateEnd != null) {
-      if (newVoucher.dateStart > newVoucher.dateEnd)
-        throw new ConflictException('Hạn sử dụng trước ngày bắt đầu');
-
-      if (newVoucher.dateCreate > newVoucher.dateEnd)
-        throw new ConflictException('Hạn sử dụng trước ngày tạo');
+    if (isExist != undefined) {
+      errors.message['id'] = 'Mã đã tồn tại';
     }
 
-    if (newVoucher.dateStart == null && newVoucher.dateEnd != null)
-      if (newVoucher.dateCreate > newVoucher.dateEnd)
-        throw new ConflictException('Hạn sử dụng trước ngày tạo');
+    const newVoucher = this.voucherRepo.create({ ...voucher });
+    const today = new Date();
 
-    if (newVoucher.dateStart != null && newVoucher.dateEnd == null)
-      throw new ConflictException('Hạn sử dụng không có');
+    if (newVoucher.dateStart != null) {
+      if (newVoucher.dateStart < today) {
+        errors.message['dateStart'] = 'Lỗi trước hôm nay';
+      }
+    }
+
+    if (newVoucher.dateStart != null && newVoucher.dateEnd != null) {
+      if (newVoucher.dateStart > newVoucher.dateEnd) {
+        errors.message['dateEnd'] = 'Hạn sử dụng trước ngày bắt đầu';
+      }
+
+      if (newVoucher.dateCreate > newVoucher.dateEnd) {
+        errors.message['dateStart'] = 'Hạn sử dụng trước ngày tạo';
+      }
+    }
+
+    if (newVoucher.dateStart == null && newVoucher.dateEnd != null) {
+      if (newVoucher.dateCreate > newVoucher.dateEnd) {
+        errors.message['date'] = 'Hạn sử dụng trước ngày tạo';
+      }
+    }
+
+    if (newVoucher.dateStart != null && newVoucher.dateEnd == null) {
+      errors.message['date'] = 'Hạn sử dụng không có';
+    }
+
+    if (Object.keys(errors.message).length == 0) {
+      throw new HttpException(errors, HttpStatus.FORBIDDEN);
+    }
 
     newVoucher.partner = id;
     return await this.voucherRepo.save(newVoucher);
   }
 
   async updateUse(id: string, user: string): Promise<UpdateResult> {
+    const errors = {
+      statusCode: HttpStatus.FORBIDDEN,
+      message: {},
+    };
+
     const voucher = await this.voucherRepo.findOne(id);
-    if (voucher == undefined)
-      throw new ConflictException('Voucher không tồn tại');
+    if (voucher == undefined) {
+      errors.message['status'] = -1;
+    }
 
     if (voucher.quantity != -1)
-      if (voucher.userUse.length > voucher.quantity)
-        throw new ConflictException('Voucher hết lượt sử dụng');
+      if (voucher.userUse.length > voucher.quantity) {
+        errors.message['status'] = 1;
+      }
 
-    if (voucher.userUse.includes(user))
-      throw new ConflictException('User đã sử dụng voucher');
+    if (voucher.userUse.includes(user)) {
+      errors.message['status'] = 1;
+    }
+
+    if (Object.keys(errors.message).length == 0) {
+      throw new HttpException(errors, HttpStatus.FORBIDDEN);
+    }
 
     voucher.userUse.push(user);
     return await this.voucherRepo.update(id, voucher);
   }
 
   async updateOwned(id: string, user: string): Promise<UpdateResult> {
+    const errors = {
+      statusCode: HttpStatus.FORBIDDEN,
+      message: {},
+    };
+
     const voucher = await this.voucherRepo.findOne(id);
-    if (voucher == undefined)
-      throw new ConflictException('Voucher không tồn tại');
+    if (voucher == undefined) {
+      errors.message['status'] = -1;
+    }
 
     if (voucher.quantity != -1)
-      if (voucher.userOwned.length > voucher.quantity)
-        throw new ConflictException('Voucher hết lượt mua');
+      if (voucher.userOwned.length > voucher.quantity) {
+        errors.message['status'] = 1;
+      }
 
-    if (voucher.userOwned.includes(user))
-      throw new ConflictException('User đã mua voucher');
+    if (voucher.userOwned.includes(user)) {
+      errors.message['status'] = 1;
+    }
+
+    if (Object.keys(errors.message).length == 0) {
+      throw new HttpException(errors, HttpStatus.FORBIDDEN);
+    }
 
     voucher.userOwned.push(user);
     return await this.voucherRepo.update(id, voucher);
