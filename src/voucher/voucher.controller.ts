@@ -18,6 +18,11 @@ import { VoucherService } from './voucher.service';
 export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
 
+  @Get()
+  findAll(): Promise<Voucher[]> {
+    return this.voucherService.findAll();
+  }
+
   @Get('find/?')
   findbyService(
     @Query('service') service: string,
@@ -26,13 +31,8 @@ export class VoucherController {
   }
 
   @Get('find/use?')
-  findbyUserUse(@Query('id') userId: string): Promise<Voucher[]> {
-    return this.voucherService.findbyUserUse(userId);
-  }
-
-  @Get('find/owned?')
-  findbyUserOwned(@Query('id') userId: string): Promise<Voucher[]> {
-    return this.voucherService.findbyUserOwned(userId);
+  findbyUserUse(@Query('id') user: string): Promise<Voucher[]> {
+    return this.voucherService.findbyUser(user);
   }
 
   @Get('find/free?')

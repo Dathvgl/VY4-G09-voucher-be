@@ -4,6 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createContact_Dto } from 'src/contact/contact.dto';
+import { ContactService } from 'src/contact/contact.service';
 import { DeleteResult, Repository, UpdateResult } from 'typeorm';
 import { GiftCardCreate } from './giftcard.dto';
 import { GiftCard } from './giftcard.entity';
@@ -13,6 +15,7 @@ export class GiftCardService {
   constructor(
     @InjectRepository(GiftCard)
     private readonly giftcardRepo: Repository<GiftCard>,
+    private readonly contactService: ContactService,
   ) {}
 
   async findAll(): Promise<GiftCard[]> {
@@ -21,17 +24,67 @@ export class GiftCardService {
 
   async findbyService(service: string): Promise<GiftCard[]> {
     return await this.giftcardRepo.find({
+      select: [
+        'id',
+        'name',
+        'price',
+        'quantity',
+        'service',
+      ],
       where: { service: service },
     });
   }
 
   async findbyUser(user: string): Promise<GiftCard[]> {
-    const giftcard = await this.giftcardRepo.find();
-    return giftcard.filter((item) => item.userUse.includes(user));
+    const contactOwned = await this.contactService.findbyUser(
+      user,
+      'Owned',
+      'Giftcard',
+    );
+
+    const contactUse = await this.contactService.findbyUser(
+      user,
+      'Use',
+      'Giftcard',
+    );
+
+    if (contactOwned.length == 0) {
+      return [];
+    }
+
+    const _giftcards = [];
+    for (let i = 0; i < contactOwned.length; i++) {
+      const item = await this.findbyId(contactOwned[i].code);
+      _giftcards.push(item);
+    }
+
+    const giftcards = [];
+    const n = _giftcards.length;
+    for (let i = 0; i < n; i++) {
+      giftcards.push({ ..._giftcards[i] });
+
+      if (contactUse.filter((x) => x.code == giftcards[i].id).length > 0) {
+        giftcards[i].status = 1;
+        continue;
+      }
+
+      giftcards[i].status = 0;
+    }
+
+    return giftcards;
   }
 
-  async findOne(id: string): Promise<GiftCard> {
-    return await this.giftcardRepo.findOne(id);
+  async findbyId(id: string): Promise<GiftCard> {
+    return await this.giftcardRepo.findOne({
+      select: [
+        'id',
+        'name',
+        'price',
+        'quantity',
+        'service',
+      ],
+      where: { id: id },
+    });
   }
 
   async createPartner(id: string, giftcard: GiftCardCreate): Promise<GiftCard> {
@@ -60,21 +113,34 @@ export class GiftCardService {
       message: {},
     };
 
-    const giftcard = await this.findOne(id);
-
+    const giftcard = await this.giftcardRepo.findOne(id);
     if (giftcard == undefined) {
-      errors.message['status'] = -1;
-    }
-
-    if (giftcard.userUse.includes(user)) {
-      errors.message['status'] = 1;
-    }
-
-    if (Object.keys(errors.message).length != 0) {
+      errors.message['id'] = 'Mã không tồn tại';
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
-    giftcard.userUse.push(user);
+    const contactUse = await this.contactService.findbyCode(
+      id,
+      'Use',
+      'Giftcard',
+    );
+
+    if (giftcard.quantity > 0) {
+      if (giftcard.quantity == contactUse.length) {
+        errors.message['quantity'] = 'Hết lượt sử dụng';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const contact: createContact_Dto = {
+      user: user,
+      type: 'Use',
+      category: 'Giftcard',
+      code: id,
+    };
+
+    this.contactService.create(contact);
+
     return await this.giftcardRepo.update(id, giftcard);
   }
 
@@ -84,22 +150,41 @@ export class GiftCardService {
       message: {},
     };
 
-    const giftcard = await this.findOne(id);
+    const contactOwned = await this.contactService.findbyUser(
+      user,
+      'Owned',
+      'Giftcard',
+    );
 
-    if (giftcard == undefined) {
-      errors.message['status'] = -1;
-    }
-
-    if (giftcard.userOwned.includes(user)) {
-      errors.message['status'] = 1;
-    }
-
-    if (Object.keys(errors.message).length != 0) {
+    if (contactOwned.length > 0) {
+      errors.message['id'] = 'Đã sở hữu';
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
-    giftcard.userOwned.push(user);
-    return await this.giftcardRepo.update(id, giftcard);
+    const giftcard = await this.giftcardRepo.findOne(id);
+    const contactOwn = await this.contactService.findbyCode(
+      id,
+      'Owned',
+      'Giftcard',
+    );
+
+    if (giftcard.quantity > 0) {
+      if (giftcard.quantity == contactOwn.length) {
+        errors.message['quantity'] = 'Hết lượt mua';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const contact: createContact_Dto = {
+      user: user,
+      type: 'Owned',
+      category: 'Giftcard',
+      code: id,
+    };
+
+    this.contactService.create(contact);
+
+    return null;
   }
 
   async delete(id: string): Promise<DeleteResult> {

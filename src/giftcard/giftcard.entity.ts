@@ -21,9 +21,4 @@ export class GiftCard {
   partner: string;
   @Column({ default: () => 'CUCURRENT_TIMESTAMP()' })
   dateCreate: Date;
-  
-  @Column({ type: 'simple-array' })
-  userUse: string[];
-  @Column({ type: 'simple-array' })
-  userOwned: string[];
 }

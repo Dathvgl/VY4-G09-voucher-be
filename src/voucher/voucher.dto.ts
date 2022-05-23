@@ -1,4 +1,4 @@
-import { Article } from "src/article/article.entity";
+import { Article } from 'src/article/article.entity';
 
 export class createVoucher_Dto {
   id: string;
@@ -8,11 +8,11 @@ export class createVoucher_Dto {
   limited: number;
   price: number;
   quantity: number;
-  dateStart?: Date;
-  dateEnd?: Date;
+  dateStart: Date;
+  dateEnd: Date;
   service: string;
-  priceAt: number;
-  placeUse: string[];
+  priceAct: number;
+  placeUse: string;
 }
 
 export class updateArticle_Dto {

@@ -30,17 +30,12 @@ export class Voucher {
   @Column({ nullable: true })
   dateEnd?: Date;
   
-  @Column({ type: 'simple-array' })
-  userUse: string[];
-  @Column({ type: 'simple-array' })
-  userOwned: string[];
-
   @Column()
   service: string;
   @Column({ default: 0 })
   priceAct: number;
-  @Column({ type: 'simple-array' })
-  placeUse: string[];
+  @Column({ nullable: true })
+  placeUse: string;
 
   @ManyToOne(() => Article, (article) => article.vouchers, {
     nullable: true,

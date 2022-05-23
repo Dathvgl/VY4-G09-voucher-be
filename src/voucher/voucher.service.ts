@@ -1,12 +1,12 @@
-import {
-  ConflictException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createContact_Dto } from 'src/contact/contact.dto';
+import { ContactService } from 'src/contact/contact.service';
 import { DeleteResult, MoreThan, Repository, UpdateResult } from 'typeorm';
-import { updateArticle_Dto, createVoucher_Dto } from './voucher.dto';
+import {
+  updateArticle_Dto,
+  createVoucher_Dto,
+} from './voucher.dto';
 import { Voucher } from './voucher.entity';
 
 @Injectable()
@@ -14,10 +14,27 @@ export class VoucherService {
   constructor(
     @InjectRepository(Voucher)
     private readonly voucherRepo: Repository<Voucher>,
+    private readonly contactService: ContactService,
   ) {}
+
+  async findAll(): Promise<Voucher[]> {
+    return await this.voucherRepo.find();
+  }
 
   async findbyService(service: string): Promise<Voucher[]> {
     const res = await this.voucherRepo.find({
+      select: [
+        'id',
+        'name',
+        'content',
+        'discount',
+        'limited',
+        'price',
+        'quantity',
+        'dateStart',
+        'dateEnd',
+        'priceAct',
+      ],
       where: { service: service },
     });
 
@@ -51,30 +68,105 @@ export class VoucherService {
     return array;
   }
 
-  async findbyUserUse(user: string): Promise<Voucher[]> {
-    const giftcard = await this.voucherRepo.find();
-    return giftcard.filter((item) => item.userUse.includes(user));
-  }
+  async findbyUser(user: string): Promise<Voucher[]> {
+    const contactOwned = await this.contactService.findbyUser(
+      user,
+      'Owned',
+      'Voucher',
+    );
 
-  async findbyUserOwned(user: string): Promise<Voucher[]> {
-    const giftcard = await this.voucherRepo.find();
-    return giftcard.filter((item) => item.userOwned.includes(user));
+    const contactUse = await this.contactService.findbyUser(
+      user,
+      'Use',
+      'Voucher',
+    );
+
+    if (contactOwned.length == 0) {
+      return [];
+    }
+
+    const _vouchers = [];
+    for (let i = 0; i < contactOwned.length; i++) {
+      const item = await this.findbyId(contactOwned[i].code);
+      _vouchers.push(item);
+    }
+
+    const vouchers = [];
+    const n = _vouchers.length;
+    for (let i = 0; i < n; i++) {
+      vouchers.push({ ..._vouchers[i] });
+
+      if (contactUse.filter((x) => x.code == vouchers[i].id).length > 0) {
+        vouchers[i].status = 1;
+        continue;
+      }
+
+      if (
+        vouchers[i].status == 'Vô thời hạn' ||
+        vouchers[i].status == 'Đang kích hoạt'
+      ) {
+        vouchers[i].status = 0;
+        continue;
+      }
+
+      vouchers[i].status = 2;
+    }
+
+    return vouchers;
   }
 
   async findbyFree(service: string): Promise<Voucher[]> {
     return await this.voucherRepo.find({
+      select: [
+        'id',
+        'name',
+        'content',
+        'discount',
+        'limited',
+        'price',
+        'quantity',
+        'dateStart',
+        'dateEnd',
+        'service',
+        'priceAct',
+      ],
       where: { price: 0, service: service },
     });
   }
 
   async findbyBuy(service: string): Promise<Voucher[]> {
     return await this.voucherRepo.find({
+      select: [
+        'id',
+        'name',
+        'content',
+        'discount',
+        'limited',
+        'price',
+        'quantity',
+        'dateStart',
+        'dateEnd',
+        'service',
+        'priceAct',
+      ],
       where: { price: MoreThan(0), service: service },
     });
   }
 
   async findbyId(id: string): Promise<Voucher> {
     const res = await this.voucherRepo.findOne({
+      select: [
+        'id',
+        'name',
+        'content',
+        'discount',
+        'limited',
+        'price',
+        'quantity',
+        'service',
+        'priceAct',
+        'placeUse',
+      ],
       where: { id: id },
     });
 
@@ -162,23 +254,32 @@ export class VoucherService {
 
     const voucher = await this.voucherRepo.findOne(id);
     if (voucher == undefined) {
-      errors.message['status'] = -1;
-    }
-
-    if (voucher.quantity != -1)
-      if (voucher.userUse.length > voucher.quantity) {
-        errors.message['status'] = 1;
-      }
-
-    if (voucher.userUse.includes(user)) {
-      errors.message['status'] = 1;
-    }
-
-    if (Object.keys(errors.message).length != 0) {
+      errors.message['id'] = 'Mã không tồn tại';
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
-    voucher.userUse.push(user);
+    const contactUse = await this.contactService.findbyCode(
+      id,
+      'Use',
+      'Voucher',
+    );
+
+    if (voucher.quantity > 0) {
+      if (voucher.quantity == contactUse.length) {
+        errors.message['quantity'] = 'Hết lượt sử dụng';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const contact: createContact_Dto = {
+      user: user,
+      type: 'Use',
+      category: 'Voucher',
+      code: id,
+    };
+
+    this.contactService.create(contact);
+
     return await this.voucherRepo.update(id, voucher);
   }
 
@@ -188,26 +289,41 @@ export class VoucherService {
       message: {},
     };
 
-    const voucher = await this.voucherRepo.findOne(id);
-    if (voucher == undefined) {
-      errors.message['status'] = -1;
-    }
+    const contactOwned = await this.contactService.findbyUser(
+      user,
+      'Owned',
+      'Voucher',
+    );
 
-    if (voucher.quantity != -1)
-      if (voucher.userOwned.length > voucher.quantity) {
-        errors.message['status'] = 1;
-      }
-
-    if (voucher.userOwned.includes(user)) {
-      errors.message['status'] = 1;
-    }
-
-    if (Object.keys(errors.message).length != 0) {
+    if (contactOwned.length > 0) {
+      errors.message['id'] = 'Đã sở hữu';
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
 
-    voucher.userOwned.push(user);
-    return await this.voucherRepo.update(id, voucher);
+    const voucher = await this.voucherRepo.findOne(id);
+    const contactOwn = await this.contactService.findbyCode(
+      id,
+      'Owned',
+      'Voucher',
+    );
+
+    if (voucher.quantity > 0) {
+      if (voucher.quantity == contactOwn.length) {
+        errors.message['quantity'] = 'Hết lượt mua';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const contact: createContact_Dto = {
+      user: user,
+      type: 'Owned',
+      category: 'Voucher',
+      code: id,
+    };
+
+    this.contactService.create(contact);
+
+    return null;
   }
 
   async updateArticle(

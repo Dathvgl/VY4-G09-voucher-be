@@ -33,6 +33,11 @@ export class GiftCardController {
     return this.giftcardService.findbyUser(user);
   }
 
+  @Get('find/giftcard?')
+  findbyId(@Query('id') id: string): Promise<GiftCard> {
+    return this.giftcardService.findbyId(id);
+  }
+
   @Post('create/partner?')
   @Header('Content-Type', 'application/json')
   createPartner(
