@@ -50,6 +50,11 @@ export class VoucherController {
     return this.voucherService.findbyId(id);
   }
 
+  @Get('findFull/voucher?')
+  findbyIdFull(@Query('id') id: string): Promise<Voucher> {
+    return this.voucherService.findbyIdFull(id);
+  }
+
   @Post('create/partner?')
   createVoucher(
     @Query('id') partnerId: string,

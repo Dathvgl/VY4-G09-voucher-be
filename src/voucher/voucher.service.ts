@@ -195,6 +195,19 @@ export class VoucherService {
     return voucher;
   }
 
+  async findbyIdFull(id: string): Promise<Voucher> {
+    return await this.voucherRepo.findOne({
+      select: [
+        'id',
+        'partner',
+        'dateCreate',
+        'priceAct',
+        'placeUse',
+      ],
+      where: { id: id },
+    });
+  }
+
   async createVoucher(
     id: string,
     voucher: createVoucher_Dto,
