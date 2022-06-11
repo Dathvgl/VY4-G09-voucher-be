@@ -3,10 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { createContact_Dto } from 'src/contact/contact.dto';
 import { ContactService } from 'src/contact/contact.service';
 import { DeleteResult, MoreThan, Repository, UpdateResult } from 'typeorm';
-import {
-  updateArticle_Dto,
-  createVoucher_Dto,
-} from './voucher.dto';
+import { updateArticle_Dto, createVoucher_Dto } from './voucher.dto';
 import { Voucher } from './voucher.entity';
 
 @Injectable()
@@ -173,6 +170,7 @@ export class VoucherService {
     const voucher = { ...res, status: '' };
     const todaySplit = new Date();
 
+    if (Object.keys(voucher).length === 1) return null;
     if (voucher.dateStart == null && voucher.dateEnd != null)
       if (todaySplit > voucher.dateEnd) {
         voucher.status = 'Đã quá hạn';
@@ -192,18 +190,13 @@ export class VoucherService {
 
       voucher.status = 'Đang kích hoạt';
     }
+
     return voucher;
   }
 
   async findbyIdFull(id: string): Promise<Voucher> {
     return await this.voucherRepo.findOne({
-      select: [
-        'id',
-        'partner',
-        'dateCreate',
-        'priceAct',
-        'placeUse',
-      ],
+      select: ['id', 'partner', 'dateCreate', 'priceAct', 'placeUse'],
       where: { id: id },
     });
   }
@@ -259,7 +252,11 @@ export class VoucherService {
     return await this.voucherRepo.save(newVoucher);
   }
 
-  async updateUse(id: string, user: string): Promise<UpdateResult> {
+  async updateUse(
+    id: string,
+    user: string,
+    price: number,
+  ): Promise<UpdateResult> {
     const errors = {
       statusCode: HttpStatus.FORBIDDEN,
       message: {},
@@ -277,9 +274,27 @@ export class VoucherService {
       'Voucher',
     );
 
+    if (voucher.priceAct > price) {
+      errors.message['priceAct'] = 'Chưa tới giá để áp dụng';
+      throw new HttpException(errors, HttpStatus.FORBIDDEN);
+    }
+
     if (voucher.quantity > 0) {
       if (voucher.quantity == contactUse.length) {
         errors.message['quantity'] = 'Hết lượt sử dụng';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
+    }
+
+    const contactUser = await this.contactService.findbyUser(
+      user,
+      'Use',
+      'Voucher',
+    );
+
+    if (contactUser.length > 0) {
+      if (contactUser.filter((x) => x.code === id).length > 0) {
+        errors.message['id'] = 'Đã sử dụng';
         throw new HttpException(errors, HttpStatus.FORBIDDEN);
       }
     }
@@ -309,8 +324,10 @@ export class VoucherService {
     );
 
     if (contactOwned.length > 0) {
-      errors.message['id'] = 'Đã sở hữu';
-      throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      if (contactOwned.filter((x) => x.code === id).length > 0) {
+        errors.message['id'] = 'Đã sở hữu';
+        throw new HttpException(errors, HttpStatus.FORBIDDEN);
+      }
     }
 
     const voucher = await this.voucherRepo.findOne(id);

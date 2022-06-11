@@ -15,6 +15,12 @@ export class ContactService {
     return await this.contactRepo.find();
   }
 
+  async findbySearch(type: string, category: string) {
+    return await this.contactRepo.find({
+      where: { type: type, category: category },
+    });
+  }
+
   async findbyUser(
     user: string,
     type: string,
@@ -42,6 +48,14 @@ export class ContactService {
   async create(contact: createContact_Dto): Promise<createContact_Dto> {
     const newContact = this.contactRepo.create({ ...contact });
     return await this.contactRepo.save(newContact);
+  }
+
+  async updatePay(code: string, user: string, payment: string) {
+    const contact = await this.contactRepo.findOne({
+      where: { code, user },
+    });
+    contact.payment = payment;
+    await this.contactRepo.update(contact.id, contact);
   }
 
   async delete(id: number): Promise<DeleteResult> {

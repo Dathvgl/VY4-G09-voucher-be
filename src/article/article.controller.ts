@@ -48,7 +48,7 @@ export class ArticleController {
   }
 
   @Delete('delete/article?')
-  deleteVoucher(@Query('id') id: number) {
+  deleteArticle(@Query('id') id: number) {
     return this.articleService.delete(id);
   }
 }

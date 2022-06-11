@@ -7,10 +7,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import {
-  updateArticle_Dto,
-  createVoucher_Dto,
-} from './voucher.dto';
+import { updateArticle_Dto, createVoucher_Dto } from './voucher.dto';
 import { Voucher } from './voucher.entity';
 import { VoucherService } from './voucher.service';
 
@@ -24,9 +21,7 @@ export class VoucherController {
   }
 
   @Get('find/?')
-  findbyService(
-    @Query('service') service: string,
-  ): Promise<Voucher[]> {
+  findbyService(@Query('service') service: string): Promise<Voucher[]> {
     return this.voucherService.findbyService(service);
   }
 
@@ -64,8 +59,12 @@ export class VoucherController {
   }
 
   @Put('activate/voucher?')
-  updateUse(@Query('id') id: string, @Query('user') user: string) {
-    return this.voucherService.updateUse(id, user);
+  updateUse(
+    @Query('id') id: string,
+    @Query('user') user: string,
+    @Body() price: number,
+  ) {
+    return this.voucherService.updateUse(id, user, price);
   }
 
   @Put('owned/voucher?')

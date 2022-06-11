@@ -17,6 +17,9 @@ export class Contact {
   @Column()
   code: string;
 
+  @Column({ default: '' })
+  payment: string;
+
   @Column({ default: () => 'CUCURRENT_TIMESTAMP()' })
   dateCreate: Date;
 }

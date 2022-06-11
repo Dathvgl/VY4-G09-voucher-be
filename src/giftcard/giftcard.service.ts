@@ -97,11 +97,11 @@ export class GiftCardService {
     if (isExist != undefined) {
       errors.message['id'] = 'Mã đã tồn tại';
     }
-
+    
     if (Object.keys(errors.message).length != 0) {
       throw new HttpException(errors, HttpStatus.FORBIDDEN);
     }
-
+    
     const newGiftCard = this.giftcardRepo.create({ ...giftcard });
     newGiftCard.partner = id;
     return await this.giftcardRepo.save(newGiftCard);
