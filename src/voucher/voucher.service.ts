@@ -170,12 +170,17 @@ export class VoucherService {
     const voucher = { ...res, status: '' };
     const todaySplit = new Date();
 
+    const today = todaySplit.toISOString().slice(0, 10);
     if (Object.keys(voucher).length === 1) return null;
-    if (voucher.dateStart == null && voucher.dateEnd != null)
-      if (todaySplit > voucher.dateEnd) {
+
+    if (voucher.dateStart == null && voucher.dateEnd != null) {
+      const endSplit = new Date(voucher.dateEnd);
+      const end = endSplit.toISOString().slice(0, 10);
+      if (today > end) {
         voucher.status = 'Đã quá hạn';
         return voucher;
       }
+    }
 
     if (voucher.dateEnd == null) {
       voucher.status = 'Vô thời hạn';
@@ -183,7 +188,9 @@ export class VoucherService {
     }
 
     if (voucher.dateStart != null) {
-      if (todaySplit < voucher.dateStart) {
+      const startSplit = new Date(voucher.dateStart);
+      const start = startSplit.toISOString().slice(0, 10);
+      if (today < start) {
         voucher.status = 'Chưa quá hạn';
         return voucher;
       }
