@@ -173,7 +173,7 @@ export class VoucherService {
     const today = todaySplit.toISOString().slice(0, 10);
     if (Object.keys(voucher).length === 1) return null;
 
-    if (voucher.dateStart == null && voucher.dateEnd != null) {
+    if (voucher.dateEnd != null) {
       const endSplit = new Date(voucher.dateEnd);
       const end = endSplit.toISOString().slice(0, 10);
       if (today > end) {
