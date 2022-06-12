@@ -38,13 +38,39 @@ export class VoucherService {
     const array = [];
     res.forEach((item, index) => {
       array[index] = item;
-      const todaySplit = new Date();
+      // const todaySplit = new Date();
 
-      if (item.dateStart == null && item.dateEnd != null)
-        if (todaySplit > item.dateEnd) {
+      // if (item.dateStart == null && item.dateEnd != null)
+      //   if (todaySplit > item.dateEnd) {
+      //     array[index].status = 'Đã quá hạn';
+      //     return;
+      //   }
+
+      // if (item.dateEnd == null) {
+      //   array[index].status = 'Vô thời hạn';
+      //   return;
+      // }
+
+      // if (item.dateStart != null) {
+      //   if (todaySplit < item.dateStart) {
+      //     array[index].status = 'Chưa quá hạn';
+      //     return;
+      //   }
+
+      //   array[index].status = 'Đang kích hoạt';
+      //   return;
+      // }
+
+      const todaySplit = new Date();
+      const today = todaySplit.toISOString().slice(0, 10);
+      if (item.dateEnd != null) {
+        const endSplit = new Date(item.dateEnd);
+        const end = endSplit.toISOString().slice(0, 10);
+        if (today > end) {
           array[index].status = 'Đã quá hạn';
           return;
         }
+      }
 
       if (item.dateEnd == null) {
         array[index].status = 'Vô thời hạn';
@@ -52,13 +78,14 @@ export class VoucherService {
       }
 
       if (item.dateStart != null) {
-        if (todaySplit < item.dateStart) {
+        const startSplit = new Date(item.dateStart);
+        const start = startSplit.toISOString().slice(0, 10);
+        if (today < start) {
           array[index].status = 'Chưa quá hạn';
           return;
         }
 
         array[index].status = 'Đang kích hoạt';
-        return;
       }
     });
 
@@ -160,6 +187,8 @@ export class VoucherService {
         'limited',
         'price',
         'quantity',
+        'dateStart',
+        'dateEnd',
         'service',
         'priceAct',
         'placeUse',
@@ -169,7 +198,6 @@ export class VoucherService {
 
     const voucher = { ...res, status: '' };
     const todaySplit = new Date();
-
     const today = todaySplit.toISOString().slice(0, 10);
     if (Object.keys(voucher).length === 1) return null;
 
